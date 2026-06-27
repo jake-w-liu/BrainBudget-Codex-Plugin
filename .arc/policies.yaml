@@ -51,6 +51,7 @@
       "network_access": false,
       "workflow": [
         "Do diagnostic work first; do not make broad edits.",
+        "Do not perform destructive or irreversible actions without verified scope, repo context, and an explicit need tied to the request.",
         "Prefer minimal patches, rollback plans, and human-reviewable diffs.",
         "Use reviewer or subagent review for security, data, migration, or production-risk code when available.",
         "Stop and report if verification remains inconclusive."

@@ -1,7 +1,8 @@
 {
   "name": "brainbudget",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "BrainBudget for Codex using AI Stupid Level and local repository signals.",
+  "repository": "https://github.com/jake-w-liu/BrainBudget-Codex-Plugin",
   "author": {
     "name": "Jake"
   },

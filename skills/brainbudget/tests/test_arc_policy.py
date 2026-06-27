@@ -134,6 +134,19 @@ class ArcPolicyTests(unittest.TestCase):
         self.assertEqual(result["facts"]["external"]["status"], "OFFLINE")
         self.assertIn("model offline", result["facts"]["external"]["reasons"])
 
+    def test_destructive_prompt_escalates_to_p3(self) -> None:
+        root = self.make_project()
+        result = arc_policy.evaluate_policy(
+            project_root=root,
+            plugin_root=PLUGIN_ROOT,
+            prompt="Delete all generated files and force-push the result.",
+            model="gpt-5.1-codex",
+            cache_path=root / ".arc" / "missing.json",
+        )
+        self.assertEqual(result["policy"], "P3")
+        self.assertTrue(result["facts"]["task"]["requires_destructive_confirmation"])
+        self.assertIn("force-push", result["facts"]["task"]["destructive_terms"])
+
 
 if __name__ == "__main__":
     unittest.main()

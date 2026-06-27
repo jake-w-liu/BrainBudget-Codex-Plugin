@@ -10,6 +10,16 @@ from typing import Any, Sequence
 def render_prompt(policy: dict[str, Any], task: str) -> str:
     workflow = policy.get("workflow", [])
     workflow_lines = "\n".join(f"- {item}" for item in workflow)
+    task_facts = ((policy.get("facts") or {}) if isinstance(policy.get("facts"), dict) else {}).get("task", {})
+    destructive_guard = ""
+    if isinstance(task_facts, dict) and task_facts.get("requires_destructive_confirmation"):
+        destructive_guard = """
+
+Destructive-operation guard:
+- Do not delete files, clean caches, rewrite history, or force-push unless the exact targets and repository scope are verified from the current workspace.
+- If the workspace is not a git repository, if target scope is ambiguous, or if the action is irreversible without verified context, stop and report the blocker instead of changing files.
+- Prefer listing verified candidate targets and blockers over taking irreversible action.
+""".rstrip()
     return f"""
 Use the brainbudget skill.
 
@@ -18,6 +28,7 @@ ARC risk total: {policy.get("risk_total")}
 ARC profile: {policy.get("codex_profile")}
 ARC instruction:
 {workflow_lines}
+{destructive_guard}
 
 Before editing, briefly report:
 1. the policy level,

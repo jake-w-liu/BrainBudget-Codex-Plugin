@@ -26,6 +26,24 @@ class RenderPromptTests(unittest.TestCase):
         self.assertIn("Perform read-only reconnaissance before editing.", prompt)
         self.assertIn("fix the failing test", prompt)
 
+    def test_render_prompt_includes_destructive_guard(self) -> None:
+        prompt = render_prompt.render_prompt(
+            {
+                "policy": "P3",
+                "risk_total": 0.91,
+                "codex_profile": "arc-p3",
+                "workflow": ["Do diagnostic work first; do not make broad edits."],
+                "facts": {
+                    "task": {
+                        "requires_destructive_confirmation": True,
+                    }
+                },
+            },
+            "Delete all generated files and force-push the result.",
+        )
+        self.assertIn("Destructive-operation guard:", prompt)
+        self.assertIn("If the workspace is not a git repository", prompt)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -52,6 +52,16 @@ RISKY_TERMS = [
     "schema",
     "credential",
 ]
+DESTRUCTIVE_TERMS = [
+    "delete",
+    "destructive",
+    "force-push",
+    "force push",
+    "rm -rf",
+    "git reset --hard",
+    "git clean",
+    "drop database",
+]
 
 BROAD_CHANGE_TERMS = ["refactor", "rewrite", "architecture", "large", "entire", "all"]
 READ_ONLY_TERMS = ["summarize", "explain", "list", "show", "inspect", "read-only", "without modifying", "do not edit"]
@@ -370,6 +380,7 @@ def task_risk(prompt: str) -> tuple[float, dict[str, Any]]:
         return 0.0, {"risky_terms": [], "read_only_terms": [], "low_risk_terms": [], "broad_change_terms": []}
 
     risky_hits = [term for term in RISKY_TERMS if term in text]
+    destructive_hits = [term for term in DESTRUCTIVE_TERMS if term in text]
     broad_hits = [term for term in BROAD_CHANGE_TERMS if term in text]
     read_only_hits = [term for term in READ_ONLY_TERMS if term in text]
     low_risk_hits = [term for term in LOW_RISK_TERMS if term in text]
@@ -395,6 +406,7 @@ def task_risk(prompt: str) -> tuple[float, dict[str, Any]]:
 
     return clamp(risk), {
         "risky_terms": risky_hits,
+        "destructive_terms": destructive_hits,
         "broad_change_terms": broad_hits,
         "read_only_terms": read_only_hits,
         "low_risk_terms": low_risk_hits,
@@ -403,10 +415,13 @@ def task_risk(prompt: str) -> tuple[float, dict[str, Any]]:
         "code_change_terms": code_change_hits,
         "code_change_intent": code_change_intent,
         "documentation_only": documentation_only,
+        "requires_destructive_confirmation": bool(destructive_hits),
     }
 
 
 def choose_policy(total: float, thresholds: dict[str, Any], task_facts: dict[str, Any] | None = None) -> str:
+    if task_facts and task_facts.get("requires_destructive_confirmation"):
+        return "P3"
     if task_facts and task_facts.get("code_change_intent") and total < float(thresholds.get("p0_max", 0.25)):
         return "P1"
     if total < float(thresholds.get("p0_max", 0.25)):
