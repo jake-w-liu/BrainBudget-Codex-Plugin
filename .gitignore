@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.arc/stupidmeter_cache.json
+.arc/telemetry.jsonl
+.arc/state.json
+.arc/last_policy.json
+.arc/last_prompt.txt
+.arc/last_codex_run.jsonl

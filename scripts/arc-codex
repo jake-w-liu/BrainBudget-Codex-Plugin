@@ -1,0 +1,146 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  echo "usage: arc-codex [--dry-run] [--exec-json] [--skip-fetch] [--codex-bin BIN] [--model MODEL] <codex task>" >&2
+}
+
+DRY_RUN=0
+EXEC_JSON=0
+SKIP_FETCH=0
+CODEX_BIN="${ARC_CODEX_BIN:-codex}"
+MODEL="${CODEX_MODEL:-gpt-5.1-codex}"
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --dry-run)
+      DRY_RUN=1
+      shift
+      ;;
+    --exec-json)
+      EXEC_JSON=1
+      shift
+      ;;
+    --skip-fetch)
+      SKIP_FETCH=1
+      shift
+      ;;
+    --codex-bin)
+      CODEX_BIN="$2"
+      shift 2
+      ;;
+    --model)
+      MODEL="$2"
+      shift 2
+      ;;
+    --help|-h)
+      usage
+      exit 0
+      ;;
+    --)
+      shift
+      break
+      ;;
+    -*)
+      usage
+      exit 2
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+
+if [[ $# -lt 1 ]]; then
+  usage
+  exit 2
+fi
+
+TASK="$*"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PLUGIN_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+SKILL_SCRIPT_DIR="$PLUGIN_ROOT/.agents/skills/brainbudget/scripts"
+if ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"; then
+  IN_GIT_REPO=1
+else
+  ROOT="$(pwd)"
+  IN_GIT_REPO=0
+fi
+CODEX_HOME_DIR="${CODEX_HOME:-$HOME/.codex}"
+
+cd "$ROOT"
+mkdir -p .arc
+
+if [[ "$SKIP_FETCH" -eq 0 ]]; then
+  python3 "$SKILL_SCRIPT_DIR/fetch_stupidmeter.py" \
+    --root "$ROOT" \
+    --cache .arc/stupidmeter_cache.json >/dev/null || true
+fi
+
+python3 "$SKILL_SCRIPT_DIR/arc_policy.py" \
+  --root "$ROOT" \
+  --model "$MODEL" \
+  --prompt "$TASK" \
+  --cache .arc/stupidmeter_cache.json > .arc/last_policy.json
+
+python3 "$SKILL_SCRIPT_DIR/render_prompt.py" \
+  --policy-file .arc/last_policy.json \
+  "$TASK" > .arc/last_prompt.txt
+
+PROFILE="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["codex_profile"])' .arc/last_policy.json)"
+REASONING="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["reasoning_effort"])' .arc/last_policy.json)"
+VERBOSITY="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["model_verbosity"])' .arc/last_policy.json)"
+APPROVAL="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["approval_policy"])' .arc/last_policy.json)"
+SANDBOX="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["sandbox_mode"])' .arc/last_policy.json)"
+NETWORK_ACCESS="$(python3 -c 'import json,sys; print("true" if json.load(open(sys.argv[1], encoding="utf-8"))["network_access"] else "false")' .arc/last_policy.json)"
+PROMPT_CONTENT="$(cat .arc/last_prompt.txt)"
+
+ARGS=(-m "$MODEL")
+if [[ -f "$CODEX_HOME_DIR/$PROFILE.config.toml" ]]; then
+  ARGS+=(--profile "$PROFILE")
+else
+  ARGS+=(--sandbox "$SANDBOX")
+  if [[ "$EXEC_JSON" -eq 1 ]]; then
+    ARGS+=(-c "approval_policy=\"$APPROVAL\"")
+  else
+    ARGS+=(--ask-for-approval "$APPROVAL")
+  fi
+  ARGS+=(-c "model_reasoning_effort=\"$REASONING\"")
+  ARGS+=(-c "model_verbosity=\"$VERBOSITY\"")
+  if [[ "$SANDBOX" == "workspace-write" ]]; then
+    ARGS+=(-c "sandbox_workspace_write.network_access=$NETWORK_ACCESS")
+  fi
+fi
+
+if [[ "$IN_GIT_REPO" -eq 0 ]]; then
+  ARGS+=(--skip-git-repo-check)
+fi
+
+if [[ "$DRY_RUN" -eq 1 ]]; then
+  python3 -c '
+import json
+import sys
+from pathlib import Path
+policy = json.loads(Path(".arc/last_policy.json").read_text(encoding="utf-8"))
+prompt = Path(".arc/last_prompt.txt").read_text(encoding="utf-8")
+payload = {
+    "policy": policy["policy"],
+    "codex_profile": policy["codex_profile"],
+    "model": sys.argv[2],
+    "reasoning_effort": policy["reasoning_effort"],
+    "approval_policy": policy["approval_policy"],
+    "sandbox_mode": policy["sandbox_mode"],
+    "prompt": prompt,
+    "command_mode": "exec-json" if sys.argv[1] == "1" else "interactive",
+}
+print(json.dumps(payload, indent=2, sort_keys=True))
+' "$EXEC_JSON" "$MODEL"
+  exit 0
+fi
+
+echo "ARC selected profile: $PROFILE" >&2
+if [[ "$EXEC_JSON" -eq 1 ]]; then
+  "$CODEX_BIN" exec "${ARGS[@]}" --json "$PROMPT_CONTENT" | tee .arc/last_codex_run.jsonl
+else
+  "$CODEX_BIN" "${ARGS[@]}" "$PROMPT_CONTENT"
+fi

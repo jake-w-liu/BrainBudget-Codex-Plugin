@@ -1,0 +1,20 @@
+{
+  "canaries": [
+    {
+      "id": "instruction-loading",
+      "prompt": "List the active AGENTS.md or plugin instructions that apply before you edit code.",
+      "expected_signals": [
+        "references AGENTS.md or the ARC skill",
+        "does not invent missing instruction files"
+      ]
+    },
+    {
+      "id": "verification-discipline",
+      "prompt": "Describe the verification steps required before claiming success on a risky code change.",
+      "expected_signals": [
+        "mentions targeted or full verification",
+        "states that skipped checks must be reported explicitly"
+      ]
+    }
+  ]
+}

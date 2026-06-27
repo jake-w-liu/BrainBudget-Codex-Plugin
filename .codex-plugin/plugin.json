@@ -1,0 +1,22 @@
+{
+  "name": "brainbudget",
+  "version": "0.1.0",
+  "description": "BrainBudget for Codex using AI Stupid Level and local repository signals.",
+  "author": {
+    "name": "Jake"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "BrainBudget",
+    "shortDescription": "Spends extra Codex brain when reliability starts wobbling.",
+    "longDescription": "BrainBudget is the ARC layer that combines AI Stupid Level data, repository health, and task risk to pick Codex planning and verification policy.",
+    "developerName": "Jake",
+    "category": "Productivity",
+    "capabilities": [
+      "skills",
+      "hooks",
+      "verification"
+    ],
+    "defaultPrompt": "Use BrainBudget to choose a Codex workflow before editing."
+  }
+}

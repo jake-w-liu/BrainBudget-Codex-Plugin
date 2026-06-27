@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+FORCE=0
+if [[ "${1:-}" == "--force" ]]; then
+  FORCE=1
+  shift
+fi
+
+TARGET_DIR="${CODEX_HOME:-$HOME/.codex}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROFILE_DIR="$(cd "$SCRIPT_DIR/../profiles" && pwd)"
+
+mkdir -p "$TARGET_DIR"
+
+for profile in "$PROFILE_DIR"/*.config.toml; do
+  target="$TARGET_DIR/$(basename "$profile")"
+  if [[ -e "$target" && "$FORCE" -ne 1 ]]; then
+    echo "skipping existing $target" >&2
+    continue
+  fi
+  cp "$profile" "$target"
+  echo "installed $target"
+done

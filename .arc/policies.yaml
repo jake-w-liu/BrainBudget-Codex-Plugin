@@ -1,0 +1,60 @@
+{
+  "policies": {
+    "P0": {
+      "codex_profile": "arc-p0",
+      "reasoning_effort": "medium",
+      "model_verbosity": "medium",
+      "approval_policy": "on-request",
+      "sandbox_mode": "workspace-write",
+      "network_access": false,
+      "workflow": [
+        "Understand the request and inspect only necessary files.",
+        "Implement directly if the task is local and well-scoped.",
+        "Run relevant tests or explain why no test applies."
+      ]
+    },
+    "P1": {
+      "codex_profile": "arc-p1",
+      "reasoning_effort": "high",
+      "model_verbosity": "medium",
+      "approval_policy": "on-request",
+      "sandbox_mode": "workspace-write",
+      "network_access": false,
+      "workflow": [
+        "Create a concise plan before editing.",
+        "List assumptions and success criteria.",
+        "Run lint, type, and test checks for touched areas.",
+        "Review the final diff before stopping."
+      ]
+    },
+    "P2": {
+      "codex_profile": "arc-p2",
+      "reasoning_effort": "xhigh",
+      "model_verbosity": "high",
+      "approval_policy": "on-request",
+      "sandbox_mode": "workspace-write",
+      "network_access": false,
+      "workflow": [
+        "Perform read-only reconnaissance before editing.",
+        "Split the task into small verifiable steps.",
+        "Checkpoint the git state before edits.",
+        "Avoid broad refactors unless explicitly required.",
+        "Run full relevant verification and produce a risk report."
+      ]
+    },
+    "P3": {
+      "codex_profile": "arc-p3",
+      "reasoning_effort": "xhigh",
+      "model_verbosity": "high",
+      "approval_policy": "untrusted",
+      "sandbox_mode": "workspace-write",
+      "network_access": false,
+      "workflow": [
+        "Do diagnostic work first; do not make broad edits.",
+        "Prefer minimal patches, rollback plans, and human-reviewable diffs.",
+        "Use reviewer or subagent review for security, data, migration, or production-risk code when available.",
+        "Stop and report if verification remains inconclusive."
+      ]
+    }
+  }
+}

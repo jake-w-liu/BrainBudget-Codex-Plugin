@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "model_aliases": {
+    "gpt-5.1-codex": ["gpt-5.1-codex", "GPT-5.1 Codex", "gpt-5.1-codex-max"],
+    "gpt-5.5": ["gpt-5.5", "GPT-5.5"]
+  },
+  "stupidmeter": {
+    "dashboard_url": "https://aistupidlevel.info/dashboard/scores",
+    "history_url_template": "https://aistupidlevel.info/dashboard/cached",
+    "model_url_template": "",
+    "timeout_seconds": 8,
+    "cache_path": ".arc/stupidmeter_cache.json",
+    "max_cache_age_hours": 8
+  },
+  "risk_weights": {
+    "external_model_risk": 0.25,
+    "local_session_risk": 0.45,
+    "task_intrinsic_risk": 0.30
+  },
+  "policy_thresholds": {
+    "p0_max": 0.25,
+    "p1_max": 0.50,
+    "p2_max": 0.75
+  },
+  "verification": {
+    "require_clean_git_before_p2": true,
+    "max_files_without_plan_p1": 5,
+    "max_files_without_plan_p2": 2,
+    "always_run_diff_review_p2": true
+  },
+  "local_commands": {
+    "detect": {
+      "node": ["package.json"],
+      "python": ["pyproject.toml", "setup.py", "requirements.txt"]
+    },
+    "default_checks": {
+      "node": ["npm test", "npm run lint", "npm run typecheck"],
+      "python": ["python3 -m unittest", "ruff check .", "mypy ."]
+    }
+  }
+}
